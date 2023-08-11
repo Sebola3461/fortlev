@@ -420,6 +420,13 @@ export class MusicQueue {
 	}
 
 	public editUpdateMessage() {
+		if (!this.getCurrentSong()) {
+			if (this.updatePositionInterval) {
+				clearInterval(this.updatePositionInterval);
+				this.updatePositionInterval = null;
+			}
+		}
+
 		if (
 			this.lastStatusMessage &&
 			this.player.state.status != AudioPlayerStatus.Paused
