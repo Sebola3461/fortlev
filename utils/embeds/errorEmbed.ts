@@ -13,7 +13,7 @@ export function errorEmbed(
 	embedInfo: { title?: string; description?: string }
 ) {
 	const embed = new EmbedBuilder()
-		.setTitle(embedInfo.title || "❌ Something went wrong...")
+		.setTitle(embedInfo.title || "❌ Fudeu fi.")
 		.setDescription(embedInfo.description || "`Unknown error`")
 		.setColor(colors.red as ColorResolvable);
 
