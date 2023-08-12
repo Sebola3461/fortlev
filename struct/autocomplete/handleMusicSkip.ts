@@ -11,17 +11,24 @@ export async function handleMusicSkip(command: AutocompleteInteraction) {
 
 	if (!guildQueue) return;
 
+	const results = guildQueue
+		.getSongs()
+		.filter(
+			(song) =>
+				song.title.toLowerCase().includes(position) ||
+				song.title.toLowerCase().startsWith(position)
+		);
+
+	results.splice(24, 999);
+
 	command.respond(
-		guildQueue
-			.getSongs()
-			.filter((song) => song.title.includes(position))
-			.map((song) => {
-				return {
-					name: song.title,
-					value: `position,${String(
-						guildQueue.findSongIndexById(song.id)
-					)}`,
-				};
-			})
+		results.map((song) => {
+			return {
+				name: song.title,
+				value: `position,${String(
+					guildQueue.findSongIndexById(song.id)
+				)}`,
+			};
+		})
 	);
 }

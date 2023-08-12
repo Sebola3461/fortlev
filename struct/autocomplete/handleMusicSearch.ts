@@ -10,7 +10,7 @@ export async function handleMusicSearch(command: AutocompleteInteraction) {
 
 	const result = await searchVideo(search);
 
-	result.videos.slice(99, 9999);
+	result.videos.slice(24, 9999);
 
 	command.respond(
 		result.videos.map((video) => {
