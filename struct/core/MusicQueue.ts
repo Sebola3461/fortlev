@@ -498,7 +498,7 @@ export class MusicQueue {
 		this.player.pause();
 	}
 
-	private generateQueueMessage() {
+	public generateQueueMessage() {
 		const currentSong = this.getCurrentSong();
 
 		const embed = new EmbedBuilder()

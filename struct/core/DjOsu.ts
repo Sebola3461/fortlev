@@ -178,8 +178,7 @@ export class DjOsu extends Client {
 				button.followUp(queue.generateList());
 				break;
 			case "time":
-				queue.editUpdateMessage();
-				button.deleteReply();
+				button.editReply(queue.generateQueueMessage());
 				break;
 			case "download":
 				if (!queue) return;
