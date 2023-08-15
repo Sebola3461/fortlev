@@ -106,10 +106,7 @@ export class MusicQueue {
 
 					this.skipSong();
 
-					if (
-						this.getSongs().length >
-						this.getCurrentSongIndex() + 1
-					) {
+					if (!this.getSongs()[this.getCurrentSongIndex()]) {
 						this.sendClearQueueMessage();
 						this.destroyQueue();
 						return;
@@ -141,12 +138,13 @@ export class MusicQueue {
 		const currentSongIndex = currentSong
 			? this.getSongs().indexOf(currentSong)
 			: -1;
+
 		const chunksList = generateChunks<DescriptionChunk>(
 			this.getSongs().map((song, i) => {
 				return {
 					song: song,
 					text: `**#${i + 1} |** [${song.title}](${song.url})${
-						i == currentSongIndex ? " (Current Song)" : ""
+						i == currentSongIndex ? " **(Tocando Agora)**" : ""
 					} | ${song.user}`,
 				};
 			}),
@@ -173,13 +171,25 @@ export class MusicQueue {
 
 			if (targets[0] != interactionHandshake) return;
 
+			const targetPage = Number(targets[2]);
+
+			if (isNaN(targetPage)) return;
+
 			await button.deferUpdate();
 
 			const action = targets[1] as "back" | "none" | "next";
-			if (action == "next") currentPage++;
-			if (action == "back") currentPage--;
 
-			generatePage(currentPage);
+			if (chunksList[targetPage]) {
+				currentPage = targetPage;
+
+				const newPage = generatePage(currentPage);
+
+				button.editReply(newPage);
+			} else {
+				const currentPageContent = generatePage(currentPage);
+
+				button.editReply(currentPageContent);
+			}
 		});
 
 		function generatePage(page: number) {
@@ -189,15 +199,15 @@ export class MusicQueue {
 
 			const backPage = new ButtonBuilder()
 				.setLabel("◀️")
-				.setCustomId(`${interactionHandshake},back`)
+				.setCustomId(`${interactionHandshake},back,${currentPage - 1}`)
 				.setStyle(ButtonStyle.Secondary);
 			const pageInfo = new ButtonBuilder()
-				.setLabel(`${page + 1} of ${chunksList.length}`)
+				.setLabel(`${page + 1} de ${chunksList.length}`)
 				.setCustomId(`${interactionHandshake},none`)
 				.setStyle(ButtonStyle.Secondary);
 			const nextPage = new ButtonBuilder()
 				.setLabel("▶️")
-				.setCustomId(`${interactionHandshake},next`)
+				.setCustomId(`${interactionHandshake},next,${currentPage + 1}`)
 				.setStyle(ButtonStyle.Secondary);
 			const buttons = new ActionRowBuilder<ButtonBuilder>().setComponents(
 				backPage,
@@ -401,59 +411,71 @@ export class MusicQueue {
 	}
 
 	public sendUpdateMessage() {
-		if (this.lastStatusMessage)
-			this.lastStatusMessage.delete().catch(() => {
-				void {};
-			});
+		try {
+			if (this.lastStatusMessage)
+				this.lastStatusMessage.delete().catch(() => {
+					void {};
+				});
 
-		this.setLastMessage.bind(this);
+			this.setLastMessage.bind(this);
 
-		this.updatePositionInterval = setInterval(
-			this.editUpdateMessage.bind(this),
-			10000
-		);
+			this.updatePositionInterval = setInterval(
+				this.editUpdateMessage.bind(this),
+				10000
+			);
 
-		this.textChannel
-			.send(this.generateQueueMessage())
-			.then((message) => this.setLastMessage(message))
-			.catch(() => void {});
+			this.textChannel
+				.send(this.generateQueueMessage())
+				.then((message) => this.setLastMessage(message))
+				.catch(() => void {});
+		} catch (e) {
+			console.log(e);
+		}
 	}
 
 	public editUpdateMessage() {
-		if (!this.getCurrentSong()) {
+		try {
+			if (!this.getCurrentSong()) {
+				if (this.updatePositionInterval) {
+					clearInterval(this.updatePositionInterval);
+					this.updatePositionInterval = null;
+				}
+			}
+
+			if (
+				this.lastStatusMessage &&
+				this.player.state.status != AudioPlayerStatus.Paused
+			)
+				this.lastStatusMessage
+					.edit(this.generateQueueMessage())
+					.catch(() => {
+						void {};
+					});
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	public sendClearQueueMessage() {
+		try {
+			if (this.isQueueLocked()) return;
+
 			if (this.updatePositionInterval) {
 				clearInterval(this.updatePositionInterval);
 				this.updatePositionInterval = null;
 			}
-		}
 
-		if (
-			this.lastStatusMessage &&
-			this.player.state.status != AudioPlayerStatus.Paused
-		)
-			this.lastStatusMessage
-				.edit(this.generateQueueMessage())
-				.catch(() => {
+			if (this.lastStatusMessage)
+				this.lastStatusMessage.delete().catch(() => {
 					void {};
 				});
-	}
 
-	public sendClearQueueMessage() {
-		if (this.isQueueLocked()) return;
-
-		if (this.updatePositionInterval) {
-			clearInterval(this.updatePositionInterval);
-			this.updatePositionInterval = null;
+			this.textChannel
+				.send(this.generateClearQueueMessage())
+				.catch(() => void {});
+		} catch (e) {
+			console.log(e);
 		}
-
-		if (this.lastStatusMessage)
-			this.lastStatusMessage.delete().catch(() => {
-				void {};
-			});
-
-		this.textChannel
-			.send(this.generateClearQueueMessage())
-			.catch(() => void {});
 	}
 
 	private setLastMessage(message: Message) {
