@@ -65,7 +65,6 @@ export class MusicQueue {
 	private songs: Song[] = [];
 
 	private afkDestroyTimeout: NodeJS.Timeout | null = null;
-	private updatePositionInterval: NodeJS.Timer | null = null;
 	private isLocked = false;
 
 	constructor(options: { bot: DjOsu; channel: VoiceBasedChannel }) {
@@ -330,6 +329,10 @@ export class MusicQueue {
 			.setLabel("📃 Lista")
 			.setCustomId(`global,queue`)
 			.setStyle(ButtonStyle.Secondary);
+		const songTime = new ButtonBuilder()
+			.setLabel("🕒 Tempo")
+			.setCustomId(`global,time`)
+			.setStyle(ButtonStyle.Secondary);
 		const downloadAudio = new ButtonBuilder()
 			.setLabel("📥 Baixar música")
 			.setCustomId(`global,download`)
@@ -348,6 +351,7 @@ export class MusicQueue {
 			),
 			new ActionRowBuilder<ButtonBuilder>().setComponents(
 				queueList,
+				songTime,
 				downloadAudio
 			),
 		];
@@ -419,11 +423,6 @@ export class MusicQueue {
 
 			this.setLastMessage.bind(this);
 
-			this.updatePositionInterval = setInterval(
-				this.editUpdateMessage.bind(this),
-				10000
-			);
-
 			this.textChannel
 				.send(this.generateQueueMessage())
 				.then((message) => this.setLastMessage(message))
@@ -435,13 +434,6 @@ export class MusicQueue {
 
 	public editUpdateMessage() {
 		try {
-			if (!this.getCurrentSong()) {
-				if (this.updatePositionInterval) {
-					clearInterval(this.updatePositionInterval);
-					this.updatePositionInterval = null;
-				}
-			}
-
 			if (
 				this.lastStatusMessage &&
 				this.player.state.status != AudioPlayerStatus.Paused
@@ -459,11 +451,6 @@ export class MusicQueue {
 	public sendClearQueueMessage() {
 		try {
 			if (this.isQueueLocked()) return;
-
-			if (this.updatePositionInterval) {
-				clearInterval(this.updatePositionInterval);
-				this.updatePositionInterval = null;
-			}
 
 			if (this.lastStatusMessage)
 				this.lastStatusMessage.delete().catch(() => {
@@ -620,11 +607,6 @@ export class MusicQueue {
 
 	skipSong() {
 		if (this.getSongIndex() + 1 >= this.getSongs().length) {
-			if (this.updatePositionInterval) {
-				clearInterval(this.updatePositionInterval);
-				this.updatePositionInterval = null;
-			}
-
 			this.setSongIndex(this.getSongIndex() + 1);
 
 			this.player.stop();
