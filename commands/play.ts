@@ -146,19 +146,23 @@ export default new SlashCommand()
 				const stagingQueue: { id: string; song: Song }[] = [];
 
 				for (const video of playlistContent.videos) {
-					const videoData = await getVideoMP3Binary(video.url);
+					try {
+						const videoData = await getVideoMP3Binary(video.url);
 
-					stagingQueue.push({
-						id: video.id,
-						song: new Song(
-							videoData.title,
-							video.url,
-							video.thumbnails[1].url,
-							command.user,
-							videoData.mp3,
-							Number(video.duration.lengthSec)
-						),
-					});
+						stagingQueue.push({
+							id: video.id,
+							song: new Song(
+								videoData.title,
+								video.url,
+								video.thumbnails[1].url,
+								command.user,
+								videoData.mp3,
+								Number(video.duration.lengthSec)
+							),
+						});
+					} catch (e) {
+						console.log(e);
+					}
 				}
 
 				const stagedQueue: Song[] = [];
