@@ -35,13 +35,13 @@ export default new SlashCommand()
 			const canalAtual = (command.member as GuildMember).voice.channel;
 
 			if (!musica)
-				return errorEmbed(command.editReply, {
+				return errorEmbed(command.editReply.bind(command), {
 					description:
 						"Essa ai q tu escolheu ta bugada, escolhe outra ai",
 				});
 
 			if (!canalAtual)
-				return errorEmbed(command.editReply, {
+				return errorEmbed(command.editReply.bind(command), {
 					description:
 						"Tu é burro ou se faz? Tem q entrar na call burrão",
 				});
@@ -49,7 +49,7 @@ export default new SlashCommand()
 			const url = new URL(musica);
 
 			if (!clientHasValidVoicePermissions(canalAtual))
-				return errorEmbed(command.editReply, {
+				return errorEmbed(command.editReply.bind(command), {
 					description:
 						"Fi da pra toca musica nessa call não, n consigo entrar nessa porra",
 				});
