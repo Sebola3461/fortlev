@@ -441,7 +441,7 @@ export class MusicQueue {
 		if (this.player.checkPlayable()) {
 			(
 				this.player.state as AudioPlayerPlayingState
-			).resource.volume.setVolume(this.volumeIndexes[this.volume]);
+			).resource.volume?.setVolume(this.volumeIndexes[this.volume]);
 		}
 	}
 
