@@ -1,4 +1,4 @@
-import { createAudioResource } from "@discordjs/voice";
+import { AudioResource, createAudioResource } from "@discordjs/voice";
 import { randomUUID } from "crypto";
 import { AttachmentBuilder, User } from "discord.js";
 
@@ -16,6 +16,7 @@ export class Song {
 	public duration: number;
 	public id = randomUUID();
 	public playbackRate = 1;
+	public volume = 1;
 
 	constructor(
 		title: string,
@@ -35,7 +36,15 @@ export class Song {
 	}
 
 	public getAudio() {
-		return createAudioResource(bufferToStream(this.audioFile));
+		return createAudioResource(bufferToStream(this.audioFile), {
+			inlineVolume: true,
+		});
+	}
+
+	public setStaticVolume(volume: number) {
+		this.volume = volume;
+
+		return this.volume;
 	}
 
 	public toAttachment() {

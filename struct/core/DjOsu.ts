@@ -87,7 +87,7 @@ export class DjOsu extends Client {
 			},
 			{
 				type: ActivityType.Playing,
-				name: "daquele jeitão",
+				name: "daquele geitão",
 			},
 		];
 
@@ -121,7 +121,9 @@ export class DjOsu extends Client {
 			| "nextSong"
 			| "queue"
 			| "download"
-			| "time";
+			| "time"
+			| "volumeUp"
+			| "volumeDown";
 
 		const queue = this.queues.getQueue(button.guildId);
 
@@ -176,6 +178,38 @@ export class DjOsu extends Client {
 				break;
 			case "queue":
 				button.followUp(queue.generateList());
+				break;
+			case "volumeUp":
+				if (
+					!queue.checkManagePermissionsFor(
+						button.member as GuildMember
+					)
+				)
+					return;
+
+				if (queue.volume >= 10) return;
+
+				queue.volumeUp();
+				button.editReply({
+					components: queue.getPlayingEmbedButtons(),
+				});
+
+				break;
+			case "volumeDown":
+				if (
+					!queue.checkManagePermissionsFor(
+						button.member as GuildMember
+					)
+				)
+					return;
+
+				if (queue.volume < 0) return;
+
+				queue.volumeDown();
+				button.editReply({
+					components: queue.getPlayingEmbedButtons(),
+				});
+
 				break;
 			case "time":
 				button.editReply(queue.generateQueueMessage());

@@ -213,8 +213,13 @@ export default new SlashCommand()
 			}
 		} catch (e: any) {
 			console.error(e);
+
 			errorEmbed(command.editReply.bind(command), {
-				description: e.message || "Deu ruim, pinga o macaco ai",
+				title: "Ou tu fez merda ou bugo msm",
+				description:
+					e.code == "ERR_INVALID_URL"
+						? "Vc não selecionou a música, só colocou o título! Antes de enviar o comando, escolhe uma música da lista"
+						: e.message || "Deu ruim, pinga o macaco ai",
 			});
 		}
 	});

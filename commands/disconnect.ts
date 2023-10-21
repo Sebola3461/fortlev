@@ -2,10 +2,11 @@ import { GuildMember } from "discord.js";
 import { djosu } from "..";
 import { SlashCommand } from "../struct/commands/SlashCommand";
 import { errorEmbed } from "../utils/embeds/errorEmbed";
+import { infoEmbed } from "../utils/embeds/infoEmbed";
 
 export default new SlashCommand()
-	.setName("disconnect")
-	.setDescription("Disconnect and finalize queue")
+	.setName("desconectar")
+	.setDescription("Finaliza o batidao")
 	.setExecutable(async (command) => {
 		if (!command.guildId || !command.member) return;
 
@@ -13,13 +14,22 @@ export default new SlashCommand()
 
 		if (!queue)
 			return errorEmbed(command.editReply.bind(command), {
-				description: "There's nothing playing here!",
+				description: "N tem nd tocando o filho da puta",
 			});
 
 		if (!queue.checkAdminPermissionsFor(command.member as GuildMember))
 			return errorEmbed(command.editReply.bind(command), {
-				description: "You don't have permissions to do it.",
+				description: "Não, plebeu. Vc n tem permissão",
 			});
+
 		command.deleteReply();
-		queue.destroyQueue();
+
+		queue.clearQueue();
+		queue.connection.destroy();
+		djosu.queues.destroy(command.guildId);
+
+		infoEmbed(command.editReply.bind(command), {
+			title: "✅ Deu certo",
+			description: "Limpei todas as musica dessa porra",
+		});
 	});

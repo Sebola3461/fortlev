@@ -58,6 +58,10 @@ export class MusicQueue {
 
 	// resources
 	private currentSongIndex = 0;
+	public volumeIndexes = [
+		0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1,
+	];
+	public volume = 10;
 
 	// message
 	private lastStatusMessage: Message | null = null;
@@ -341,6 +345,20 @@ export class MusicQueue {
 			.setLabel("⏭️ Próxima")
 			.setCustomId(`global,nextSong`)
 			.setStyle(ButtonStyle.Secondary);
+		const volumeDown = new ButtonBuilder()
+			.setLabel("🔉 Volume -")
+			.setCustomId(`global,volumeDown`)
+			.setStyle(ButtonStyle.Secondary)
+			.setDisabled(this.volume <= 0);
+		const volumeUp = new ButtonBuilder()
+			.setLabel("🔊 Volume +")
+			.setCustomId(`global,volumeUp`)
+			.setStyle(ButtonStyle.Secondary)
+			.setDisabled(this.volume >= 10);
+		const volumeDisplay = new ButtonBuilder()
+			.setLabel(`${this.volume * 10}%`)
+			.setCustomId(`global,none`)
+			.setStyle(ButtonStyle.Secondary);
 
 		return [
 			new ActionRowBuilder<ButtonBuilder>().setComponents(
@@ -348,6 +366,11 @@ export class MusicQueue {
 				pauseSong,
 				loopToggle,
 				nextSong
+			),
+			new ActionRowBuilder<ButtonBuilder>().setComponents(
+				volumeDown,
+				volumeDisplay,
+				volumeUp
 			),
 			new ActionRowBuilder<ButtonBuilder>().setComponents(
 				queueList,
@@ -395,7 +418,49 @@ export class MusicQueue {
 
 		if (!currentSong) return;
 
+		const currentSongAudio = currentSong.getAudio();
+
+		if (currentSong.volume != this.volume) {
+			currentSong.setStaticVolume(this.volume);
+			currentSongAudio.volume.setVolume(this.volume);
+		}
+
 		this.player.play(currentSong.getAudio());
+	}
+
+	setVolume(volume: number) {
+		if (volume < 0 || volume > 1) return;
+
+		this.volume = volume;
+		this.executeVolumeChange();
+
+		return this.volume;
+	}
+
+	private executeVolumeChange() {
+		if (this.player.checkPlayable()) {
+			(
+				this.player.state as AudioPlayerPlayingState
+			).resource.volume.setVolume(this.volumeIndexes[this.volume]);
+		}
+	}
+
+	volumeUp() {
+		if (this.volume == 10) return;
+
+		this.volume += 1;
+		this.executeVolumeChange();
+
+		return this.volume;
+	}
+
+	volumeDown() {
+		if (this.volume == 0) return;
+
+		this.volume -= 1;
+		this.executeVolumeChange();
+
+		return this.volume;
 	}
 
 	getCurrentSong(): Song | undefined {
@@ -616,13 +681,7 @@ export class MusicQueue {
 
 		this.setSongIndex(this.getSongIndex() + 1);
 
-		const currentSong = this.getCurrentSong();
-
-		if (!currentSong) return;
-
-		this.player.play(currentSong.getAudio());
-
-		this.sendUpdateMessage();
+		this.selectSong(this.getSongIndex());
 	}
 
 	previousSong() {
@@ -630,13 +689,7 @@ export class MusicQueue {
 
 		this.setSongIndex(this.getSongIndex() - 1);
 
-		const currentSong = this.getCurrentSong();
-
-		if (!currentSong) return;
-
-		this.player.play(currentSong.getAudio());
-
-		this.sendUpdateMessage();
+		this.selectSong(this.getSongIndex());
 	}
 
 	play() {
