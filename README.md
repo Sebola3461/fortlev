@@ -1,7 +1,6 @@
-# osu! dj
+# Fortlev
 
-### A simple osu! beatmap audio player for discord
-
+### Plays youtube music
 ## Setup
 
 ### Requirements
