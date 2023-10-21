@@ -420,7 +420,7 @@ export class MusicQueue {
 
 		const currentSongAudio = currentSong.getAudio();
 
-		if (currentSong.volume != this.volume) {
+		if (currentSong.volume != this.volume && currentSongAudio.volume) {
 			currentSong.setStaticVolume(this.volume);
 			currentSongAudio.volume.setVolume(this.volume);
 		}
