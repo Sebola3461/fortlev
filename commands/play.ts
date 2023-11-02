@@ -15,6 +15,7 @@ import { clientHasValidVoicePermissions } from "../utils/checkers/clientHasValid
 import { errorEmbed } from "../utils/embeds/errorEmbed";
 import timeString from "../utils/transformers/timeString";
 import { colors } from "../constants/colors";
+import { LoggerService } from "../struct/general/LoggerService";
 
 export default new SlashCommand()
 	.setName("play")
@@ -29,6 +30,10 @@ export default new SlashCommand()
 	.setExecutable(async (command) => {
 		try {
 			if (!command.member) return;
+
+			const Logger = new LoggerService(
+				`Play Command: ${command.guildId}`
+			);
 
 			const musica = command.options.getString("link_ou_nome", true);
 
@@ -159,7 +164,7 @@ export default new SlashCommand()
 								stagingQueue.push({
 									id: video.id,
 									song: new Song(
-										videoData.title,
+										video.title,
 										video.url,
 										video.thumbnails[1].url,
 										command.user,
@@ -167,15 +172,25 @@ export default new SlashCommand()
 										Number(video.duration.lengthSec)
 									),
 								});
+
+								Logger.printSuccess(
+									`Staged song ${videoData.title}`
+								);
 							} else {
-								withError++;
+								Logger.printError(
+									`Invalid response: ${video.id}`
+								);
 							}
 						} catch (e) {
+							withError++;
+
+							Logger.printError(`Can't stage song a song!`);
+
 							console.log(e);
 						}
 					}
 
-					const stagedQueue: Song[] = [];
+					let stagedQueue: Song[] = [];
 
 					for (const song of stagingQueue) {
 						const index = playlistContent.videos.findIndex(
@@ -187,10 +202,20 @@ export default new SlashCommand()
 
 					let playlistDuration = 0;
 
+					for (let i = 0; i < stagedQueue.length; i++) {
+						if (!stagedQueue[i]) {
+							delete stagedQueue[i];
+						}
+
+						stagedQueue = stagedQueue.filter((song) => {
+							if (song) return song;
+						});
+					}
+
 					for (const song of stagedQueue) {
 						playlistDuration += song.duration;
 
-						queue.addSong(song);
+						queue.addSong(song, true);
 					}
 
 					if (index) {

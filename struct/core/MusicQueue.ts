@@ -91,6 +91,7 @@ export class MusicQueue {
 
 		this.skipSong.bind(this);
 		this.sendUpdateMessage.bind(this);
+		this.setLastMessage.bind(this);
 		this.play.bind(this);
 		this.isLoop.bind(this);
 		this.isQueueLocked.bind(this);
@@ -388,12 +389,11 @@ export class MusicQueue {
 		return this.getSongIndex() >= 0;
 	}
 
-	addSong(song: Song) {
+	addSong(song: Song, ignorePlay?: boolean) {
 		this.setSongs(this.getSongs().concat(song));
 
-		if (this.player.state.status == AudioPlayerStatus.Idle) {
+		if (this.player.state.status == AudioPlayerStatus.Idle && !ignorePlay) {
 			this.play();
-			this.sendUpdateMessage();
 		}
 
 		this.recalculateIndexes();
@@ -424,6 +424,8 @@ export class MusicQueue {
 			currentSong.setStaticVolume(this.volume);
 			currentSongAudio.volume.setVolume(this.volume);
 		}
+
+		this.sendUpdateMessage();
 
 		this.player.play(currentSong.getAudio());
 	}
@@ -678,8 +680,6 @@ export class MusicQueue {
 
 			return;
 		}
-
-		this.sendUpdateMessage();
 
 		this.setSongIndex(this.getSongIndex() + 1);
 
