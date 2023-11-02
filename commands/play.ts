@@ -130,86 +130,109 @@ export default new SlashCommand()
 				listId: string,
 				index?: string | null
 			) {
-				const queue = djosu.queues.getQueue(command.guildId as string);
-
-				if (!queue)
-					return errorEmbed(command.editReply.bind(command), {
-						description: "Lista inválida!",
-					});
-
-				if (index) {
-					if (isNaN(Number(index))) index = "0";
-				}
-
-				const playlistContent = await playlistInfo(listId);
-
-				const stagingQueue: { id: string; song: Song }[] = [];
-
-				for (const video of playlistContent.videos) {
-					try {
-						const videoData = await getVideoMP3Binary(video.url);
-
-						stagingQueue.push({
-							id: video.id,
-							song: new Song(
-								videoData.title,
-								video.url,
-								video.thumbnails[1].url,
-								command.user,
-								videoData.mp3,
-								Number(video.duration.lengthSec)
-							),
-						});
-					} catch (e) {
-						console.log(e);
-					}
-				}
-
-				const stagedQueue: Song[] = [];
-
-				for (const song of stagingQueue) {
-					const index = playlistContent.videos.findIndex(
-						(video) => video.id == song.id
+				try {
+					const queue = djosu.queues.getQueue(
+						command.guildId as string
 					);
 
-					stagedQueue[index] = song.song;
-				}
+					if (!queue)
+						return errorEmbed(command.editReply.bind(command), {
+							description: "Lista inválida!",
+						});
 
-				let playlistDuration = 0;
-
-				for (const song of stagedQueue) {
-					playlistDuration += song.duration;
-
-					queue.addSong(song);
-				}
-
-				if (index) {
-					if (
-						Number(index) <= queue.getSongs().length - 1 &&
-						Number(index) > -1
-					) {
-						queue.selectSong(Number(index) - 1);
+					if (index) {
+						if (isNaN(Number(index))) index = "0";
 					}
+
+					const playlistContent = await playlistInfo(listId);
+					let withError = 0;
+
+					const stagingQueue: { id: string; song: Song }[] = [];
+
+					for (const video of playlistContent.videos) {
+						try {
+							const videoData = await getVideoMP3Binary(
+								video.url
+							);
+
+							if (videoData) {
+								stagingQueue.push({
+									id: video.id,
+									song: new Song(
+										videoData.title,
+										video.url,
+										video.thumbnails[1].url,
+										command.user,
+										videoData.mp3,
+										Number(video.duration.lengthSec)
+									),
+								});
+							} else {
+								withError++;
+							}
+						} catch (e) {
+							console.log(e);
+						}
+					}
+
+					const stagedQueue: Song[] = [];
+
+					for (const song of stagingQueue) {
+						const index = playlistContent.videos.findIndex(
+							(video) => video.id == song.id
+						);
+
+						stagedQueue[index] = song.song;
+					}
+
+					let playlistDuration = 0;
+
+					for (const song of stagedQueue) {
+						playlistDuration += song.duration;
+
+						queue.addSong(song);
+					}
+
+					if (index) {
+						if (
+							Number(index) <= queue.getSongs().length - 1 &&
+							Number(index) > -1
+						) {
+							queue.selectSong(Number(index) - 1);
+						}
+					}
+
+					const addedEmbed = new EmbedBuilder()
+						.setAuthor({ name: "✅ Adicionado" })
+						.setDescription(
+							`Adicionado ${
+								stagingQueue.length
+							} músicas à lista. ${
+								withError > 1
+									? `${withError} musica(s) foram ignoradas por erros.`
+									: ""
+							}`
+						)
+						.setTitle(playlistContent.title)
+						.setURL(playlistContent.url)
+						.setThumbnail(playlistContent.thumbnails[0].url)
+						.addFields({
+							name: "🕒 Duração",
+							value: timeString(Number(playlistDuration)),
+							inline: true,
+						})
+						.setColor(colors.green as ColorResolvable);
+
+					command.editReply({
+						embeds: [addedEmbed],
+					});
+				} catch (e) {
+					console.error(e);
+					errorEmbed(command.editReply.bind(command), {
+						description:
+							"Não foi possível adicionar as músicas da playlist",
+					});
 				}
-
-				const addedEmbed = new EmbedBuilder()
-					.setAuthor({ name: "✅ Adicionado" })
-					.setDescription(
-						`Adicionado ${playlistContent.videos.length} músicas à lista `
-					)
-					.setTitle(playlistContent.title)
-					.setURL(playlistContent.url)
-					.setThumbnail(playlistContent.thumbnails[0].url)
-					.addFields({
-						name: "🕒 Duração",
-						value: timeString(Number(playlistDuration)),
-						inline: true,
-					})
-					.setColor(colors.green as ColorResolvable);
-
-				command.editReply({
-					embeds: [addedEmbed],
-				});
 			}
 		} catch (e: any) {
 			console.error(e);
