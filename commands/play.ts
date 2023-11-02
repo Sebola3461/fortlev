@@ -130,6 +130,9 @@ export default new SlashCommand()
 				listId: string,
 				index?: string | null
 			) {
+				let withError = 0;
+				const stagingQueue: { id: string; song: Song }[] = [];
+
 				try {
 					const queue = djosu.queues.getQueue(
 						command.guildId as string
@@ -145,9 +148,6 @@ export default new SlashCommand()
 					}
 
 					const playlistContent = await playlistInfo(listId);
-					let withError = 0;
-
-					const stagingQueue: { id: string; song: Song }[] = [];
 
 					for (const video of playlistContent.videos) {
 						try {
@@ -228,10 +228,19 @@ export default new SlashCommand()
 					});
 				} catch (e) {
 					console.error(e);
-					errorEmbed(command.editReply.bind(command), {
-						description:
-							"Não foi possível adicionar as músicas da playlist",
-					});
+
+					if (withError > 0 && stagingQueue.length < 1) {
+						errorEmbed(command.editReply.bind(command), {
+							description:
+								"Não foi possível adicionar as músicas da playlist",
+						});
+					}
+
+					if (withError > 0 && stagingQueue.length > 0) {
+						errorEmbed(command.editReply.bind(command), {
+							description: `\`${withError}\` música(s) foram ignoradas pois não foi possível fazer o download. O restante das músicas irão tocar normalmente`,
+						});
+					}
 				}
 			}
 		} catch (e: any) {
