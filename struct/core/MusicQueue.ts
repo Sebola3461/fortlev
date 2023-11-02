@@ -679,6 +679,8 @@ export class MusicQueue {
 			return;
 		}
 
+		this.sendUpdateMessage();
+
 		this.setSongIndex(this.getSongIndex() + 1);
 
 		this.selectSong(this.getSongIndex());
