@@ -16,6 +16,10 @@ import { errorEmbed } from "../utils/embeds/errorEmbed";
 import timeString from "../utils/transformers/timeString";
 import { colors } from "../constants/colors";
 import { LoggerService } from "../struct/general/LoggerService";
+import { YouTubeDownloader } from "../struct/youtube/YouTubeDownloader";
+import { readFileSync } from "fs";
+import path from "path";
+import { AudioPlayerStatus } from "@discordjs/voice";
 
 export default new SlashCommand()
 	.setName("play")
@@ -71,11 +75,13 @@ export default new SlashCommand()
 				guildQueue.setTextChannel(command.channel as TextChannel);
 			}
 
+			const downloader = new YouTubeDownloader();
+
 			if (playlist) return queuePlaylist(playlist, playlistIndex);
 			if (!playlist) return queueVideo(videoId);
 
 			async function queueVideo(videoId: string) {
-				const mp3 = await getVideoMP3Binary(videoId);
+				const mp3 = await downloader.getMP3(videoId);
 				const mp3Info = await videoInfo(videoId);
 
 				const queue = djosu.queues.getQueue(command.guildId as string);
@@ -87,11 +93,11 @@ export default new SlashCommand()
 
 				queue.addSong(
 					new Song(
-						mp3.title,
+						mp3Info.title,
 						mp3Info ? mp3Info.url : url.href,
 						mp3Info ? mp3Info.thumbnails[0].url : "",
 						command.user,
-						mp3.mp3,
+						mp3,
 						Number(mp3Info.duration.lengthSec)
 					)
 				);
@@ -106,7 +112,7 @@ export default new SlashCommand()
 								queue.getCurrentSongIndex() + 1
 							}\`)`
 						)
-						.setTitle(mp3.title)
+						.setTitle(mp3Info.title)
 						.setURL(mp3Info.url)
 						.setThumbnail(mp3Info.thumbnails[0].url)
 						.addFields({
@@ -156,9 +162,7 @@ export default new SlashCommand()
 
 					for (const video of playlistContent.videos) {
 						try {
-							const videoData = await getVideoMP3Binary(
-								video.url
-							);
+							const videoData = await downloader.getMP3(video.id);
 
 							if (videoData) {
 								stagingQueue.push({
@@ -168,13 +172,13 @@ export default new SlashCommand()
 										video.url,
 										video.thumbnails[1].url,
 										command.user,
-										videoData.mp3,
+										videoData,
 										Number(video.duration.lengthSec)
 									),
 								});
 
 								Logger.printSuccess(
-									`Staged song ${videoData.title}`
+									`Staged song ${video.title}`
 								);
 							} else {
 								Logger.printError(
@@ -225,6 +229,12 @@ export default new SlashCommand()
 						) {
 							queue.selectSong(Number(index) - 1);
 						}
+					}
+
+					if (
+						queue.player.state.status != AudioPlayerStatus.Playing
+					) {
+						queue.play();
 					}
 
 					const addedEmbed = new EmbedBuilder()
