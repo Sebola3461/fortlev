@@ -88,8 +88,8 @@ export default new SlashCommand()
 				queue.addSong(
 					new Song(
 						mp3.title,
-						mp3Info.url,
-						mp3Info.thumbnails[0].url,
+						mp3Info ? mp3Info.url : url.href,
+						mp3Info ? mp3Info.thumbnails[0].url : "",
 						command.user,
 						mp3.mp3,
 						Number(mp3Info.duration.lengthSec)
